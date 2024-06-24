@@ -2,7 +2,8 @@ from flask import Blueprint, render_template, flash, redirect, url_for, request
 from flask_login import current_user, login_user, logout_user, login_required
 from app import db
 from app.models import User, Post
-from app.forms import LoginForm, RegistrationForm, PostForm
+from app.forms import LoginForm, RegistrationForm, PostForm, UpdatePostForm
+import logging
 
 bp = Blueprint('routes', __name__)
 
@@ -62,3 +63,42 @@ def admin():
         return redirect(url_for('routes.index'))
     return render_template('admin.html', title='New Post', form=form)
 
+
+
+@bp.route('/post/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_post(id):
+    post = Post.query.get_or_404(id)
+    if post.user_id != current_user.id:
+        flash('You are not authorized to edit this post')
+        return redirect(url_for('routes.index'))
+    form = UpdatePostForm()
+    if form.validate_on_submit():
+        try:
+            post.title = form.title.data
+            post.body = form.body.data
+            db.session.commit()
+            flash('Your post has been updated!')
+            return redirect(url_for('routes.post', id=post.id))
+        except Exception as e:
+            logging.error(f"Error updating post: {e}")
+            flash('An error occurred while updating the post.')
+            return redirect(url_for('routes.edit_post', id=post.id))
+    elif request.method == 'GET':
+        form.title.data = post.title
+        form.body.data = post.body
+    return render_template('edit_post.html', title='Edit Post', form=form, post=post)
+
+
+
+@bp.route('/post/<int:id>/delete', methods=['POST'])
+@login_required
+def delete_post(id):
+    post = Post.query.get_or_404(id)
+    if post.user_id != current_user.id:
+        flash('You are not authorized to delete this post')
+        return redirect(url_for('routes.index'))
+    db.session.delete(post)
+    db.session.commit()
+    flash('Your post has been deleted!')
+    return redirect(url_for('routes.index'))

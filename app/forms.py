@@ -29,3 +29,12 @@ class PostForm(FlaskForm):
     title = StringField('Title', validators=[DataRequired()])
     body = TextAreaField('Body', validators=[DataRequired()])
     submit = SubmitField('Submit')
+
+class UpdatePostForm(FlaskForm):
+    title = StringField('Title', validators=[DataRequired()])
+    body = TextAreaField('Body', validators=[DataRequired()])
+    submit = SubmitField('Update Post')
+
+
+
+
