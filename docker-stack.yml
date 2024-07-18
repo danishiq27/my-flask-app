@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  mariadb:
+    image: mariadb:latest
+    env_file:
+      - mariadb.env
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - my_network
+
+  flask_app:
+    image: flask_app:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - flask_app.env
+    volumes:
+      - .:/usr/src/app
+      - ./entrypoint.sh:/entrypoint.sh
+    ports:
+      - "5000:5000"
+    networks:
+      - my_network
+    depends_on:
+      - mariadb
+    deploy:
+      replicas: 2  # Scale Flask app to 2 instances
+    entrypoint: ["/entrypoint.sh"]
+
+  nginx:
+    image: nginx:latest
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/flask_app.conf:/etc/nginx/conf.d/flask_app.conf
+      - ./nginx/proxy_params:/etc/nginx/proxy_params
+      - ./nginx/options-ssl-nginx.conf:/etc/letsencrypt/options-ssl-nginx.conf
+      - ./nginx/certs:/etc/letsencrypt/live/flaskblog.chickenkiller.com/
+      - ./nginx/ssl-dhparams.pem:/etc/letsencrypt/ssl-dhparams.pem
+      - ./nginx/entrypoint.sh:/entrypoint.sh
+    networks:
+      - my_network
+    depends_on:
+      - flask_app
+    deploy:
+      replicas: 2  # Scale Nginx to 2 instances
+      restart_policy:
+        condition: on-failure
+
+networks:
+  my_network:
+    driver: overlay
+
+volumes:
+  mariadb_data:
+

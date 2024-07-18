@@ -15,8 +15,8 @@ def create_app(config_class=Config):
     app.config.from_object(config_class)
 
    # Configure SQLAlchemy to use pymysql
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://flask_user:password@localhost/flask_db'    
-
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://flask_user:password@mariadb:3306/flask_db'    
+   # app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URI', 'mysql+pymysql://flask_user:password@db/flask_db')
     db.init_app(app)
     migrate.init_app(app, db)
     login.init_app(app)
